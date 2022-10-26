@@ -1,36 +1,26 @@
-import sys
+import fileinput
 
 
-def find_values(str):
-    array = []
-    current_value = ''
-    for i in range(len(str)):
-        if str[i].isdigit():
-            current_value += str[i]
+class Sum():
+    def find_values(self) -> int:
+        result: int = 0
+        for line in fileinput.input():
+            current_value: str = ''
 
-        elif str[i] == '-':
-            if len(current_value) != 0:
-                array.append(int(current_value))
-                current_value = ''
-            if i != len(str) - 1 and str[i + 1].isdigit():
-                current_value = str[i]
-        else:
-            if len(current_value) != 0:
-                array.append(int(current_value))
-                current_value = ''
+            for i in range(len(line) - 1):
+                if line[i].isdigit():
+                    current_value += line[i]
+                    if not line[i + 1].isdigit():
+                        result += int(current_value)
+                        current_value = ''
 
-    if len(current_value) != 0:
-        array.append(int(current_value))
+                # можно через or добавить к предыдущему условию,но тогда получается 2 проверки line[i + 1].isdigit
+                elif line[i] == '-' and line[i + 1].isdigit():
+                    current_value += line[i]
 
-    return array if 0 != len(array) else [0]
+        return result
 
 
 if __name__ == '__main__':
-    answer = 0
-    lines = sys.stdin.readlines()
-
-    for line in range(len(lines)):
-        current_array = find_values(lines[line])
-        answer += sum(current_array)
-
-    print(answer)
+    sum = Sum()
+    print(sum.find_values())
