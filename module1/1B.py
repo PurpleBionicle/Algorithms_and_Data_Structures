@@ -75,7 +75,10 @@ if __name__ == '__main__':
     for line in fileinput.input():
         line = line.strip()
 
-        if deque.capacity == 0:
+        if line == '':
+            continue
+
+        elif deque.capacity == 0:
             # наверно лучше потратиться на память тут, чем два раза сплитовать
             params: list = line.split(' ')
             if params[0] == 'set_size' and len(params) == 2:
@@ -103,7 +106,5 @@ if __name__ == '__main__':
                 deque.print()
             else:
                 print('error')
-        elif line == '':
-            continue
         else:
             print('error')
