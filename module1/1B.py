@@ -6,7 +6,7 @@ class Deque():
         self.size: int = 0
         self.capacity: int = 0
         self.array: list = []
-        self.start: int = 0  # тем самым мы сможет добиться того, что у нас будет цикличная структура
+        self.first: int = 0  # тем самым мы сможет добиться того, что у нас будет цикличная структура
         # то есть нам не придется передвигать элементы и также начало будет с этого индекса, а не с нуля
 
     def set_size(self, input_size: str) -> None:
@@ -24,14 +24,14 @@ class Deque():
             print('overflow')
         else:
             self.size += 1
-            self.start -= 1
-            self.array[(self.start) % self.capacity] = value
+            self.first -= 1
+            self.array[(self.first) % self.capacity] = value
 
     def pushb(self, value: str) -> None:
         if self.size == self.capacity:
             print('overflow')
         else:
-            self.array[(self.start + self.size) % self.capacity] = value
+            self.array[(self.first + self.size) % self.capacity] = value
             self.size += 1
 
     def popf(self) -> str:
@@ -41,8 +41,8 @@ class Deque():
 
         else:
             result: str
-            result, self.array[self.start % self.capacity] = self.array[self.start % self.capacity], None
-            self.start += 1
+            result, self.array[self.first % self.capacity] = self.array[self.first % self.capacity], None
+            self.first += 1
             self.size -= 1
             return result
 
@@ -51,8 +51,8 @@ class Deque():
             return ('underflow')
         else:
             result: str
-            result, self.array[(self.start + self.size - 1) % self.capacity] = \
-                self.array[(self.start + self.size - 1) % self.capacity], None
+            result, self.array[(self.first + self.size - 1) % self.capacity] = \
+                self.array[(self.first + self.size - 1) % self.capacity], None
 
             self.size -= 1
             return result
@@ -64,16 +64,16 @@ class Deque():
             return
         for i in range(self.size):
             if i != self.size - 1:
-                print(self.array[(self.start + i) % self.capacity], end=' ')
+                print(self.array[(self.first + i) % self.capacity], end=' ')
             else:
-                print(self.array[(self.start + i) % self.capacity])
+                print(self.array[(self.first + i) % self.capacity])
 
 
 if __name__ == '__main__':
 
     deque = Deque()
     for line in fileinput.input():
-        line = line.strip()
+        line = line.replace('\n', '')
 
         if line == '':
             continue
@@ -89,14 +89,15 @@ if __name__ == '__main__':
         # без сайза
         elif deque.capacity != 0:
             params = line.split(' ')
-            if len(params) == 2:
+            if len(params) > 2:
+                print('error')
+            elif len(params) == 2:
                 if params[0] == 'pushf':
                     deque.pushf(params[1])
                 elif params[0] == 'pushb':
                     deque.pushb(params[1])
                 else:
                     print('error')
-                    break
             elif line == 'popf':
                 print(deque.popf())
             elif line == 'popb':
