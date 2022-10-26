@@ -24,37 +24,37 @@ class Graph():
 
     def __init__(self):
         self.graph: dict = {}
-        self.vuln_libs: set = set(input().split(' '))  # напишите пожалуйста в комменте -
-        # так нормально,что инициализиция + приведение
-        self.dependence: set = set(input().split(' '))
+        self.vuln_libs = set(input().split(' '))
+        self.dependence = set(input().split(' '))
         for line in fileinput.input():
             line = line.replace('\n', '')
+            # построим граф
             self.__make_graph(line)
 
         self.__add_dependence()
 
     def search_vulnerability(self) -> None:
         for vuln_lib in self.vuln_libs:
-            path: list = []
-            visited: dict = {}
+            path: list = [vuln_lib]
+            visited: dict = {vuln_lib: True}
+            # поиск вглубину
             self.__dfs(vuln_lib, path, visited)
 
     def __dfs(self, vuln_lib: str, path: list, used: dict) -> None:
+        # если есть в зависимости с нашей либой
         if vuln_lib in self.graph:
+            # идем по ребрам от уязвимой - от нее "вверх", а не вниз к ней
             for parent in self.graph[vuln_lib]:
-                used[vuln_lib] = True
+                # если спустились до нее
                 if vuln_lib == parent and vuln_lib in self.dependence:
-                    path.append(vuln_lib)
-                    buf = path
-                    buf.reverse()
-                    used.clear()
-                    print(" ".join(buf))
+                    path.reverse()
+                    print(" ".join(path))
                     return
                 else:
                     if parent not in used:
-                        used_copy = used.copy()
-                        buf = path
-                        self.__dfs(parent, buf + [vuln_lib], used_copy)
+                        used[parent] = True
+                        self.__dfs(parent, path + [parent], used)
+                        used.pop(parent)
 
 
 if __name__ == "__main__":
