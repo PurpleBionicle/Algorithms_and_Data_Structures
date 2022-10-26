@@ -36,38 +36,37 @@ class Deque():
 
     def popf(self) -> str:
         #     можно конечно через [x if x] - но так доп память
-        for x in range(len(self.array)):
-            if self.array.count(None) == len(self.array):
-                return ('underflow')
+        if self.array.count(None) == len(self.array):
+            return ('underflow')
 
-            else:
-                result: str
-                result, self.array[self.start % self.capacity] = self.array[self.start % self.capacity], None
-                self.start += 1
-                self.size -= 1
-                return result
+        else:
+            result: str
+            result, self.array[self.start % self.capacity] = self.array[self.start % self.capacity], None
+            self.start += 1
+            self.size -= 1
+            return result
 
     def popb(self) -> str:
-        for x in range(len(self.array) - 1, 0, -1):
-            if self.array.count(None) == len(self.array):
-                return ('underflow')
-            else:
-                result: str
-                result, self.array[(self.start + self.size - 1) % self.capacity] = \
-                    self.array[(self.start + self.size - 1) % self.capacity], None
+        if self.array.count(None) == len(self.array):
+            return ('underflow')
+        else:
+            result: str
+            result, self.array[(self.start + self.size - 1) % self.capacity] = \
+                self.array[(self.start + self.size - 1) % self.capacity], None
 
-                self.size -= 1
-                return result
+            self.size -= 1
+            return result
 
     def print(self) -> None:
         #     можно конечно через [x if x] - но так доп память
-        for i in range(self.capacity):
-            if self.array.count(None) == len(self.array):
-                print('empty')
-                break
-            elif self.array[(self.start + i) % self.capacity] is not None:
+        if self.array.count(None) == len(self.array):
+            print('empty')
+            return
+        for i in range(self.size):
+            if i != self.size - 1:
                 print(self.array[(self.start + i) % self.capacity], end=' ')
-        print('')
+            else:
+                print(self.array[(self.start + i) % self.capacity])
 
 
 if __name__ == '__main__':
@@ -75,6 +74,7 @@ if __name__ == '__main__':
     deque = Deque()
     for line in fileinput.input():
         line = line.strip()
+
         if deque.capacity == 0:
             # наверно лучше потратиться на память тут, чем два раза сплитовать
             params: list = line.split(' ')
@@ -85,7 +85,6 @@ if __name__ == '__main__':
 
         # без сайза
         elif deque.capacity != 0:
-            #    pushf X, pushb X, popf, popb или print, где X
             params = line.split(' ')
             if len(params) == 2:
                 if params[0] == 'pushf':
@@ -104,5 +103,7 @@ if __name__ == '__main__':
                 deque.print()
             else:
                 print('error')
+        elif line == '':
+            continue
         else:
             print('error')
