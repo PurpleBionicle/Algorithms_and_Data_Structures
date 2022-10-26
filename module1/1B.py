@@ -5,7 +5,6 @@ class Deque():
     def __init__(self):
         self.size: int = 0
         self.capacity: int = 0
-        self.array: list = []
         self.first: int = 0  # тем самым мы сможет добиться того, что у нас будет цикличная структура
         # то есть нам не придется передвигать элементы и также начало будет с этого индекса, а не с нуля
 
@@ -36,7 +35,7 @@ class Deque():
 
     def popf(self) -> str:
         #     можно конечно через [x if x] - но так доп память
-        if self.array.count(None) == len(self.array):
+        if self.size == 0:
             return ('underflow')
 
         else:
@@ -47,7 +46,7 @@ class Deque():
             return result
 
     def popb(self) -> str:
-        if self.array.count(None) == len(self.array):
+        if self.size == 0:
             return ('underflow')
         else:
             result: str
@@ -59,7 +58,7 @@ class Deque():
 
     def print(self) -> None:
         #     можно конечно через [x if x] - но так доп память
-        if self.array.count(None) == len(self.array):
+        if self.size == 0:
             print('empty')
             return
         for i in range(self.size):
