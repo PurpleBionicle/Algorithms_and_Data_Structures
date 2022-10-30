@@ -55,7 +55,7 @@ class SplayTree():
             parent: Node = node.parent
             grandparent: Node = parent.parent
 
-            if grandparent is not None:
+            if grandparent is None:
                 self.__zig(node)
 
             elif (grandparent.left == parent and parent.left == node) or \
@@ -67,8 +67,9 @@ class SplayTree():
 
     def __search(self, key: int) -> Node:
         current_node: Node = self.root
-        while current_node is not Node and key != current_node.key:
-            previous_node: Node = current_node
+        previous_node: Node = None
+        while current_node is not None and key != current_node.key:
+            previous_node = current_node
             if key > current_node.key:
                 current_node = current_node.right
             else:
@@ -80,7 +81,7 @@ class SplayTree():
 
     def search(self, key: int) -> None:
         result: Node = self.__search(key)
-        print('1' + str(result.value)) if result is not None else print('0')
+        print('1 ' + str(result.value)) if result is not None else print('0')
 
     def set(self, key: int, value: str) -> None:
         node: Node = self.__search(key)
@@ -104,14 +105,16 @@ class SplayTree():
                     current_node = current_node.right
                 else:  # Есть элемент уже с таким ключом в дереве
                     self.root = self.__splay(current_node)
+                    print('error')
+                    return
 
             if key < previos_node.key:
                 previos_node.left = Node(key, value)
-                previos_node.parent = previos_node
+                previos_node.left.parent = previos_node
                 self.root = self.__splay(previos_node.left)
             else:
                 previos_node.right = Node(key, value)
-                previos_node.parent = previos_node
+                previos_node.right.parent = previos_node
                 self.root = self.__splay(previos_node.right)
 
     def min(self) -> None:
@@ -166,9 +169,61 @@ class SplayTree():
             self.root = self.__merge(node.left, node.parent)
             del node
 
-    # TODO
     def print(self) -> None:
-        print(7)
+        def __print_(count: int) -> None:
+            for i in range(count):
+                print(' _ _')
+
+        if self.root is None:
+            print('_')
+            return
+
+        class Level():
+            def __init__(self):
+                self.count_underscore = 0
+                self.array: list = []
+
+        current_level = Level()
+        new_level = Level()
+        current_level.array.append(self.root)
+        while len(new_level.array) > 0:
+            for i in range(len(current_level.array)):
+                node: Node = current_level.array[i]
+                if i != 0:
+                    print(' ', end='')
+
+                if node is not None:
+                    print('[ {0} {1}'.format(node.key, node.value), end='')
+                    if current_level.array[i].parent is not None:
+                        print('{0}'.format(current_level.array[i].parent), end='')
+                    print(']', end='')
+
+                    if node.left is not None:
+                        new_level.array.append(node.left)
+                    elif len(new_level.array) == 0 or new_level.array[-1] is not None:
+                        new_level.array.append(None)
+                    else:
+                        new_level.count_underscore += 1
+
+                    if node.right is not None:
+                        new_level.array.append(node.right)
+                    elif len(new_level.array) == 0 or new_level.array[-1] is not None:
+                        new_level.array.append(None)
+                    else:
+                        new_level.count_underscore += 1
+
+                else:
+                    print('_', end='')
+                    __print_(current_level.count_underscore - 1)
+                    if len(new_level.array) == 0 or new_level.array[-1] is not None:
+                        new_level.array.append(None)
+                        new_level.count_underscore = current_level.count_underscore << 1
+                    else:
+                        new_level.count_underscore += current_level.count_underscore
+
+            if len(new_level.array) > 1:
+                print('')
+            current_level, new_level = new_level, None
 
 
 if __name__ == '__main__':
@@ -183,19 +238,19 @@ if __name__ == '__main__':
 
         elif re.search('add .* .*', line):
             params: list = line.split(' ')
-            tree.add(params[1], params[2])
+            tree.add(int(params[1]), params[2])
 
         elif re.search('set .* .*', line):
             params: list = line.split(' ')
-            tree.set(params[1], params[2])
+            tree.set(int(params[1]), params[2])
 
         elif re.search('delete .*', line):
             params: list = line.split(' ')
-            tree.delete(params[1])
+            tree.delete(int(params[1]))
 
         elif re.search('search .*', line):
             params: list = line.split(' ')
-            tree.search(params[1])
+            tree.search(int(params[1]))
 
         elif line == 'min':
             tree.min()
