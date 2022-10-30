@@ -59,7 +59,7 @@ class SplayTree():
                 self.__zig(node)
 
             elif (grandparent.left == parent and parent.left == node) or \
-                    (grandparent.parent == parent and parent.right == node):
+                    (grandparent.right == parent and parent.right == node):
                 self.__zig_zig(node)
             else:
                 self.__zig_zag(node)
@@ -81,13 +81,17 @@ class SplayTree():
 
     def search(self, key: int) -> None:
         result: Node = self.__search(key)
+        if result is not None:
+            self.root = self.__splay(result)
         print('1 ' + str(result.value)) if result is not None else print('0')
 
     def set(self, key: int, value: str) -> None:
         node: Node = self.__search(key)
-        if node is not Node:
+        if node is not None:
             self.root = self.__splay(node)
             self.root.value = value
+        else:
+            print('error')
 
     def add(self, key: int, value: str) -> None:
         if self.root is None:
@@ -126,7 +130,8 @@ class SplayTree():
         while current_node.left is not None:
             current_node = current_node.left
         self.root = self.__splay(current_node)
-        print(str(current_node.key) + ' ' + str(current_node.value))
+        if current_node is not None:
+            print(str(current_node.key) + ' ' + str(current_node.value))
 
     def __max(self, node: Node) -> Node:
         if node is None:
@@ -141,7 +146,8 @@ class SplayTree():
 
     def max(self) -> None:
         result: Node = self.__max(self.root)
-        print(str(result.key) + ' ' + str(result.value))
+        if result is not None:
+            print(str(result.key) + ' ' + str(result.value))
 
     def __merge(self, node1: Node, node2: Node) -> Node:
         if node1 is None:
@@ -149,8 +155,11 @@ class SplayTree():
         if node2 is None:
             return node1
 
-        current_node: Node = node1
-        node1 = self.__splay(self.__max(current_node))
+        max_node: Node = node1
+        while max_node.right is not None:
+            max_node = max_node.right
+
+        node1 = self.__splay(max_node)
         node1.right = node2
         if node2 is not None:
             node2.parent = node1
@@ -162,68 +171,79 @@ class SplayTree():
             self.root = self.__splay(node)
 
             if node.left is not None:
-                node.left.parent = Node
+                node.left.parent = None
             if node.right is not None:
-                node.right.parent = Node
+                node.right.parent = None
 
-            self.root = self.__merge(node.left, node.parent)
+            self.root = self.__merge(node.left, node.right)
             del node
+        else:
+            print('error')
 
     def print(self) -> None:
         def __print_(count: int) -> None:
             for i in range(count):
-                print(' _ _')
+                print(' _', end='')
 
         if self.root is None:
             print('_')
             return
 
-        class Level():
-            def __init__(self):
-                self.count_underscore = 0
-                self.array: list = []
+        class Node_on_level():
+            def __init__(self, node: Node = None):
+                self.count_underscore = 0 if node is not None else 1
+                self.node: Node = node
 
-        current_level = Level()
-        new_level = Level()
-        current_level.array.append(self.root)
-        while len(new_level.array) > 0:
-            for i in range(len(current_level.array)):
-                node: Node = current_level.array[i]
+        current_level: list = []
+        new_level: list = []
+        flag_stop: bool = False
+        current_level.append(Node_on_level(self.root))
+
+        while not flag_stop:
+            flag_stop = True
+            count_of_node_per_next_level: int = 0
+
+            for i in range(len(current_level)):
                 if i != 0:
                     print(' ', end='')
 
-                if node is not None:
-                    print('[ {0} {1}'.format(node.key, node.value), end='')
-                    if current_level.array[i].parent is not None:
-                        print('{0}'.format(current_level.array[i].parent), end='')
+                if current_level[i].node is not None:
+                    print('[{0} {1}'.format(current_level[i].node.key, current_level[i].node.value), end='')
+                    if current_level[i].node.parent is not None:
+                        print(' {0}'.format(current_level[i].node.parent.key), end='')
                     print(']', end='')
 
-                    if node.left is not None:
-                        new_level.array.append(node.left)
-                    elif len(new_level.array) == 0 or new_level.array[-1] is not None:
-                        new_level.array.append(None)
+                    if current_level[i].node.left is not None:
+                        new_level.append(Node_on_level(current_level[i].node.left))
+                        count_of_node_per_next_level += 1
+                    elif len(new_level) == 0 or new_level[-1] is not None:
+                        new_level.append(Node_on_level(None))
                     else:
-                        new_level.count_underscore += 1
+                        new_level[i].count_underscore += 1
 
-                    if node.right is not None:
-                        new_level.array.append(node.right)
-                    elif len(new_level.array) == 0 or new_level.array[-1] is not None:
-                        new_level.array.append(None)
+                    if current_level[i].node.right is not None:
+                        new_level.append(Node_on_level(current_level[i].node.right))
+                        count_of_node_per_next_level += 1
+                    elif len(new_level) == 0 or new_level[-1] is not None:
+                        new_level.append(Node_on_level(None))
                     else:
-                        new_level.count_underscore += 1
+                        new_level[i].count_underscore += 1
 
                 else:
                     print('_', end='')
-                    __print_(current_level.count_underscore - 1)
-                    if len(new_level.array) == 0 or new_level.array[-1] is not None:
-                        new_level.array.append(None)
-                        new_level.count_underscore = current_level.count_underscore << 1
+                    __print_(current_level[i].count_underscore - 1)
+                    # print(current_level[i].count_underscore)
+                    if len(new_level) == 0 or new_level[-1].node is not None:
+                        new_level.append(Node_on_level(None))
+                        new_level[-1].count_underscore = current_level[i].count_underscore << 1
                     else:
-                        new_level.count_underscore += current_level.count_underscore
+                        new_level[-1].count_underscore += current_level[i].count_underscore << 1
 
-            if len(new_level.array) > 1:
-                print('')
-            current_level, new_level = new_level, None
+            # if len(new_level) > 0 and count_of_node_per_next_level > 0:
+            print('')
+            current_level, new_level = new_level, []
+            if len(current_level) != 0 and count_of_node_per_next_level > 0:
+                flag_stop = False
 
 
 if __name__ == '__main__':
@@ -233,22 +253,19 @@ if __name__ == '__main__':
     for line in fileinput.input():
         line = line.replace('\n', '')
 
-        if line == '':
-            continue
-
-        elif re.search('add .* .*', line):
+        if re.search('add \S{1}\S* \S*', line):
             params: list = line.split(' ')
             tree.add(int(params[1]), params[2])
 
-        elif re.search('set .* .*', line):
+        elif re.search('set \S{1}\S* \S*', line):
             params: list = line.split(' ')
             tree.set(int(params[1]), params[2])
 
-        elif re.search('delete .*', line):
+        elif re.search('delete \S{1}\S*', line):
             params: list = line.split(' ')
             tree.delete(int(params[1]))
 
-        elif re.search('search .*', line):
+        elif re.search('search \S{1}\S*', line):
             params: list = line.split(' ')
             tree.search(int(params[1]))
 
@@ -260,6 +277,9 @@ if __name__ == '__main__':
 
         elif line == 'print':
             tree.print()
+
+        elif line == '':
+            continue
 
         else:
             print('error')
