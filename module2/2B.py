@@ -11,9 +11,77 @@ class Node:
         self.value: str = value
 
 
-class SplayTree():
+class SplayTree:
     def __init__(self):
         self.root = None
+
+    def __str__(self):
+        result: str = ''
+
+        def __print_(current_result: str, count: int) -> str:
+            for _ in range(count):
+                current_result += ' _'
+            return current_result
+
+        if self.root is None:
+            result = '_\n'
+            return result
+
+        class Node_on_level:
+            def __init__(self, node: Node = None):
+                self.count_underscore = 0 if node is not None else 1
+                self.node: Node = node
+
+        current_level: list = []
+        new_level: list = []
+        flag_stop: bool = False
+        current_level.append(Node_on_level(self.root))
+
+        while not flag_stop:
+            flag_stop = True
+            count_of_node_per_next_level: int = 0
+
+            for i in range(len(current_level)):
+                if i != 0:
+                    result += ' '
+
+                if current_level[i].node is not None:
+                    result += f'[{current_level[i].node.key} {current_level[i].node.value}'
+                    if current_level[i].node.parent is not None:
+                        result += f' {current_level[i].node.parent.key}'
+                    result += ']'
+
+                    if current_level[i].node.left is not None:
+                        new_level.append(Node_on_level(current_level[i].node.left))
+                        count_of_node_per_next_level += 1
+                    elif len(new_level) == 0 or new_level[-1] is not None:
+                        new_level.append(Node_on_level(None))
+                    else:
+                        new_level[i].count_underscore += 1
+
+                    if current_level[i].node.right is not None:
+                        new_level.append(Node_on_level(current_level[i].node.right))
+                        count_of_node_per_next_level += 1
+                    elif len(new_level) == 0 or new_level[-1] is not None:
+                        new_level.append(Node_on_level(None))
+                    else:
+                        new_level[i].count_underscore += 1
+
+                else:
+                    result += '_'
+                    result = __print_(result, current_level[i].count_underscore - 1)
+                    if len(new_level) == 0 or new_level[-1].node is not None:
+                        new_level.append(Node_on_level(None))
+                        new_level[-1].count_underscore = current_level[i].count_underscore << 1
+                    else:
+                        new_level[-1].count_underscore += current_level[i].count_underscore << 1
+
+            result += '\n'
+            current_level, new_level = new_level, []
+            if len(current_level) != 0 and count_of_node_per_next_level > 0:
+                flag_stop = False
+
+        return result
 
     def __zig(self, node: Node) -> None:
         parent: Node = node.parent
@@ -79,11 +147,11 @@ class SplayTree():
             self.root = self.__splay(previous_node)
         return current_node
 
-    def search(self, key: int) -> None:
+    def search(self, key: int) -> Node:
         result: Node = self.__search(key)
         if result is not None:
             self.root = self.__splay(result)
-        print('1 ' + str(result.value)) if result is not None else print('0')
+        return result
 
     def set(self, key: int, value: str) -> None:
         node: Node = self.__search(key)
@@ -91,7 +159,7 @@ class SplayTree():
             self.root = self.__splay(node)
             self.root.value = value
         else:
-            print('error')
+            raise Exception('error')
 
     def add(self, key: int, value: str) -> None:
         if self.root is None:
@@ -109,8 +177,7 @@ class SplayTree():
                     current_node = current_node.right
                 else:  # Есть элемент уже с таким ключом в дереве
                     self.root = self.__splay(current_node)
-                    print('error')
-                    return
+                    raise Exception('error')
 
             if key < previos_node.key:
                 previos_node.left = Node(key, value)
@@ -121,33 +188,26 @@ class SplayTree():
                 previos_node.right.parent = previos_node
                 self.root = self.__splay(previos_node.right)
 
-    def min(self) -> None:
+    def min(self) -> Node:
         if self.root is None:
-            print('error')
-            return
+            raise Exception('error')
 
         current_node: Node = self.root
         while current_node.left is not None:
             current_node = current_node.left
         self.root = self.__splay(current_node)
         if current_node is not None:
-            print(str(current_node.key) + ' ' + str(current_node.value))
+            return current_node
 
-    def __max(self, node: Node) -> Node:
-        if node is None:
-            print('error')
-            return
+    def max(self) -> Node:
+        if self.root is None:
+            raise Exception('error')
 
         current_node: Node = self.root
         while current_node.right is not None:
             current_node = current_node.right
         self.root = self.__splay(current_node)
         return current_node
-
-    def max(self) -> None:
-        result: Node = self.__max(self.root)
-        if result is not None:
-            print(str(result.key) + ' ' + str(result.value))
 
     def __merge(self, node1: Node, node2: Node) -> Node:
         if node1 is None:
@@ -178,72 +238,7 @@ class SplayTree():
             self.root = self.__merge(node.left, node.right)
             del node
         else:
-            print('error')
-
-    def print(self) -> None:
-        def __print_(count: int) -> None:
-            for i in range(count):
-                print(' _', end='')
-
-        if self.root is None:
-            print('_')
-            return
-
-        class Node_on_level():
-            def __init__(self, node: Node = None):
-                self.count_underscore = 0 if node is not None else 1
-                self.node: Node = node
-
-        current_level: list = []
-        new_level: list = []
-        flag_stop: bool = False
-        current_level.append(Node_on_level(self.root))
-
-        while not flag_stop:
-            flag_stop = True
-            count_of_node_per_next_level: int = 0
-
-            for i in range(len(current_level)):
-                if i != 0:
-                    print(' ', end='')
-
-                if current_level[i].node is not None:
-                    print('[{0} {1}'.format(current_level[i].node.key, current_level[i].node.value), end='')
-                    if current_level[i].node.parent is not None:
-                        print(' {0}'.format(current_level[i].node.parent.key), end='')
-                    print(']', end='')
-
-                    if current_level[i].node.left is not None:
-                        new_level.append(Node_on_level(current_level[i].node.left))
-                        count_of_node_per_next_level += 1
-                    elif len(new_level) == 0 or new_level[-1] is not None:
-                        new_level.append(Node_on_level(None))
-                    else:
-                        new_level[i].count_underscore += 1
-
-                    if current_level[i].node.right is not None:
-                        new_level.append(Node_on_level(current_level[i].node.right))
-                        count_of_node_per_next_level += 1
-                    elif len(new_level) == 0 or new_level[-1] is not None:
-                        new_level.append(Node_on_level(None))
-                    else:
-                        new_level[i].count_underscore += 1
-
-                else:
-                    print('_', end='')
-                    __print_(current_level[i].count_underscore - 1)
-                    # print(current_level[i].count_underscore)
-                    if len(new_level) == 0 or new_level[-1].node is not None:
-                        new_level.append(Node_on_level(None))
-                        new_level[-1].count_underscore = current_level[i].count_underscore << 1
-                    else:
-                        new_level[-1].count_underscore += current_level[i].count_underscore << 1
-
-            # if len(new_level) > 0 and count_of_node_per_next_level > 0:
-            print('')
-            current_level, new_level = new_level, []
-            if len(current_level) != 0 and count_of_node_per_next_level > 0:
-                flag_stop = False
+            raise Exception('error')
 
 
 if __name__ == '__main__':
@@ -253,30 +248,53 @@ if __name__ == '__main__':
     for line in fileinput.input():
         line = line.replace('\n', '')
 
-        if re.search('add \S{1}\S* \S*', line):
+        if re.search('add \S+ \S*', line):
             params: list = line.split(' ')
-            tree.add(int(params[1]), params[2])
+            try:
+                tree.add(int(params[1]), params[2])
+            except Exception as error:
+                print(error)
 
-        elif re.search('set \S{1}\S* \S*', line):
+        elif re.search('set \S+ \S*', line):
             params: list = line.split(' ')
-            tree.set(int(params[1]), params[2])
+            try:
+                tree.set(int(params[1]), params[2])
+            except Exception as error:
+                print(error)
 
-        elif re.search('delete \S{1}\S*', line):
+        elif re.search('delete \S+', line):
             params: list = line.split(' ')
-            tree.delete(int(params[1]))
+            try:
+                tree.delete(int(params[1]))
+            except Exception as error:
+                print(error)
 
-        elif re.search('search \S{1}\S*', line):
+        elif re.search('search \S+', line):
             params: list = line.split(' ')
-            tree.search(int(params[1]))
+            node: Node = tree.search(int(params[1]))
+
+            if node is not None:
+                print(f'1 {node.value}')
+            else:
+                print(0)
 
         elif line == 'min':
-            tree.min()
+            try:
+                node:Node =tree.min()
+                print(node.key, node.value)
+            except Exception as error:
+                print(error)
 
         elif line == 'max':
-            tree.max()
+            try:
+                node:Node =tree.max()
+                print(node.key, node.value)
+            except Exception as error:
+                print(error)
+
 
         elif line == 'print':
-            tree.print()
+            print(tree, end='')
 
         elif line == '':
             continue
