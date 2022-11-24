@@ -1,5 +1,5 @@
 import fileinput
-
+import re
 
 class Item:
     def __init__(self, weight: int, cost: int):
@@ -70,7 +70,9 @@ if __name__ == '__main__':
 
         if line == '':
             continue
-        else:
+        elif re.search('\d+ \d+',line):
             weight, cost = line.split(' ')
             knapsack.add_item(Item(weight, cost))
+        else:
+            print('error')
     print(knapsack.fullness())
