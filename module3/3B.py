@@ -45,7 +45,9 @@ class Bloom_filter():
         for bit in self.array:
             bin: str = f'{bit:08b}'
             result += bin
-        return result if len(result) % self.size != 0 else result[:-(len(result) % self.size)]
+
+        shift: int = len(result) % self.size
+        return result if len(result) % self.size == 0 else result[:len(result) - shift]
 
     def add(self, k: int):
         for i in range(self.hashes_count):

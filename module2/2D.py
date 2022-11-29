@@ -1,20 +1,20 @@
-import re
 import fileinput
 
 
 class Node:
-    def __init__(self, chars=None, brother=None, child=None):
+    def __init__(self, chars='', brother=None, child=None, end_of_word=False):
         self.chars: str = chars
         self.brother: Node = brother
         self.child: Node = child
+        self.end_of_word = end_of_word
 
     def check_for_empty(self):
-        return len(self.chars) == 0 or self is None
+        return len(self.chars) == 0
 
 
 class Bor:
     def __init__(self):
-        self.root = Node()
+        self.root = None
 
     def __max_prefix(self, node: Node, word: str) -> int:
         for i in range(len(word)):
@@ -23,29 +23,95 @@ class Bor:
         return len(word)
 
     def __split(self, node: Node, index: int) -> None:
-        new_node = Node(chars=node.chars[index:])
-        new_node.brother = node.brother
-        node.brother = new_node
-        node.chars = node.chars[index:]
+        new_node = Node(chars=node.chars[index:], end_of_word=True)
+        new_node.child = node.child
+        node.child = new_node
+        node.chars = node.chars[:index]
 
-    def search(self, tree: Node, word: str):
+    def search(self, tree=Node(), word: str = '') -> None | Node:
+        def __check_error(tree:Node=Node(),word:str=''):
+            def compare_word(word1:str,word2:str):
+                count_error:int = 0
+                i,j= 0,0
+                while i<len(word1) or j<len(word2):
+                    if word1[i]==word2[j]:
+                        i+=1
+                        j+=1
+                    else:
+                        count_error+=1
+                        if word1[i+1]==word[j]:
+                            i+=2
+                            j+=1
+                        elif word[i]==word[j+1]:
+                            j+=2
+                            i+=1
+                        else:
+                            return -1
+                        #Не пропущен 
+
+            # лишний символ
+            same_part = self.__max_prefix(tree,word)
+            if same_part
+
+            # отсутствует символ
+            if i + 1 < len(node.key) and node.key[i + 1] == word[word_index]:
+                err = ErrorType.LOOSE
+                self._recursive_check(accumulate, node, word, err, key_index + i + 1, word_index)
+            elif i + 1 == len(node.key) and word[word_index] in node.kids:
+                err = ErrorType.LOOSE
+                self._recursive_check(accumulate + node.key, node.kids[word[word_index]], word, err, 0, word_index)
+
+            # символы поменяны местами
+            if word_index + 1 < len(word) and i == len(node.key) - 1 and (
+                    word[word_index + 1] == node.key[i] and word[word_index] in node.kids):
+                err = ErrorType.SWAP_BOARD
+                self._recursive_check(accumulate + node.key, node.kids[word[word_index]], word, err, 1, word_index + 2)
+            elif word_index + 1 < len(word) and i + 1 < len(node.key) and node.key[i] == word[word_index + 1] and \
+                    node.key[i + 1] == \
+                    word[word_index]:
+                err = ErrorType.SWAP_BOARD
+                self._recursive_check(accumulate, node, word, err, key_index + i + 2,
+                                      word_index + 2)
+
+            # Если не сработало ни одна из предыдущих условий, значит символ был заменён
+            err = ErrorType.REPLACE
+            self._recursive_check(accumulate, node, word, err, key_index + i + 1, word_index + 1)
+            return
+
+        if tree is None:
+            return None
+
         if tree.check_for_empty():
-            return 0
+            if self.root is None:
+                return None
+            tree = self.root
+
         same_part: int = self.__max_prefix(tree, word)
         if same_part == 0:
             # если нет префикса, то идем к другому брату - в другую ветвь
             return self.search(tree.brother, word)
-        if same_part == len(word):
+        if same_part == word and same_part == tree.chars and tree.end_of_word:
             # дошли
             return tree
         if same_part == len(tree.chars):
             # если слово больше ноды, то спускаемся глубже
-            return self.search(tree.child, word)
-        return 0
+            return self.search(tree.child, word[same_part:])
+        return None
 
-    def add(self, tree: Node, word: str):
-        if tree.check_for_empty():
-            return Node(chars=word)
+    def add(self, tree=None, word: str = ''):
+        if self.root is None:
+            tree = Node(chars=word, end_of_word=True)
+            self.root = tree
+            return tree
+
+        if tree is None:
+            tree = Node(chars=word, end_of_word=True)
+            return tree
+        # if tree.check_for_empty():
+        #     tree = Node(chars=word)
+        #     if self.root is None:
+        #         self.root = tree
+        #     return tree
 
         same_part: int = self.__max_prefix(tree, word)
         if same_part == 0:
@@ -56,16 +122,13 @@ class Bor:
             tree.child = self.add(tree.child, word[same_part:])
         return tree
 
-    # node
-    #             int prefix(char* x, int n, char* key, int m) // длина наибольшего общего префикса строк x и key
-    # 	for( int k=0; k<n; k++ )
-    # 		if( k==m || x[k]!=key[k] )
-    # 			return k;
-    # 	return n;
+
+def get_error_type(word: str, answer: str):
+    pass
 
 
-# -1 = ошибка , 0 = 1 ошибка , 1 = совпадение
 def main():
+    # вставка лишнего символа, удаление символа, замена символа или транспозиция соседних символов.
     bor = Bor()
     count = None
     words: int = 0
@@ -87,10 +150,14 @@ def main():
 
         if words < count:
             node = bor.add(node, line)
+            words += 1
         else:
-            answer_node = bor.search(answer_node, line)
-
-        words += 1
+            # raise error/1 type_error node / 1 node
+            answer_node = bor.search(Node(), line)
+            if answer_node is None:
+                print(f'{line} -?')
+            else:
+                print(f'{line} - ok')
 
 
 if __name__ == '__main__':
