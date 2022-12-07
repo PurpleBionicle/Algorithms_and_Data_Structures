@@ -21,19 +21,20 @@ class Error_login:
             if try_ == self.current_time:
                 return current_lock_time if current_lock_time > try_ else -1
             else:
-                if try_ < current_lock_time:
+                if try_ < current_lock_time:  # игнор попыток во время бана
                     continue
 
-                if try_ - init_time > 2 * self.max_lock_time:
-                    init_time = try_
-                    self.lock_time = self.min_lock_time
-                    self.count_of_trying = 0
+                if self.current_time - try_ > 2 * self.max_lock_time:  # 2Bmax condition
+                    continue
+
+                # if try_># обнуление если прошло время интервала
+
                 self.count_of_trying = self.count_of_trying + 1 if try_ - self.first_try_time < self.interval else 1
 
                 if self.count_of_trying == 1:
-                    self.first_try_time = try_
+                    self.first_try_time = try_  # для расчета интервала
 
-                if self.count_of_trying == self.max_trying:
+                if self.count_of_trying == self.max_trying:  # для блокировки
                     self.count_of_trying = 0
                     current_lock_time = try_ + self.lock_time
                     self.lock_time *= 2
@@ -45,6 +46,8 @@ def main():
     trying: list[int] = []
     for line in fileinput.input():
         line = line.replace('\n', '')
+        # if line=='exit':
+        #     break
         trying.append(int(line))
     result = error.check_of_trying(trying)
     print(result if result != -1 else 'ok')
