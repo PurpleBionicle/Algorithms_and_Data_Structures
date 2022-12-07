@@ -17,8 +17,7 @@ class Knapsack:
         self.weights: list[int] = weights
         self.size: float = 0
         self.__fullness: int = 0  # строка в бинарном представлении
-        # max_ = max(self.values)
-        # k = (max_ * (1 - self.accuracy)) / len(self.values)
+        # k = (max(self.values) * (1 - self.accuracy)) / len(self.values)
         k = 1 - self.accuracy
         self.capacity = int(self.capacity * k)
         for i in range(len(self.weights)):
