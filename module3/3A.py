@@ -7,71 +7,47 @@ class Error_login:
         self.count_of_trying: int = 0
         self.interval: int = interval
         self.current_time: int = current_time
-        self.lock_time: int = start_lock_time
+        self.lock_time: int = start_lock_time if start_lock_time else None
         self.min_lock_time: int = start_lock_time
         self.max_lock_time: int = max_lock_time
         self.trys_per_interval: list = []
 
-    def check_of_trying(self, trying: list[int]):
+    def __clear(self) -> None:
+        self.trys_per_interval.clear()
+        self.count_of_trying = 0
+
+    def check_of_trying(self, trying: list[int]) -> int:
         trying.sort()
         current_lock_time: int = 0
-        # for try_ in trying:
-        #     if try_ < current_lock_time:  # игнор попыток во время бана
-        #         continue
-        #
-        #     if self.current_time - try_ >= 2 * self.max_lock_time:  # 2Bmax condition
-        #         continue
-        #
-        #     if len(self.trys_per_interval) != 0:
-        #         if try_ - self.trys_per_interval[0] > self.interval:
-        #             self.trys_per_interval.pop(0)
-        #             self.trys_per_interval.append(try_)
-        #         else:
-        #             self.trys_per_interval.append(try_)
-        #             self.count_of_trying += 1
-        #     else:
-        #         self.count_of_trying += 1
-        #         if self.max_trying == 1:
-        #             self.count_of_trying = 0
-        #             current_lock_time = try_ + self.lock_time
-        #             self.lock_time *= 2
-        #             if self.lock_time > self.max_lock_time:
-        #                 self.lock_time = self.max_lock_time
-        #             self.trys_per_interval.clear()
-        #         continue
-        #
-        #     if self.count_of_trying == self.max_trying:  # для блокировки
-        #         current_lock_time = try_ + self.lock_time
-        #         self.lock_time *= 2
-        #
-        #         if self.lock_time > self.max_lock_time:
-        #             self.lock_time = self.max_lock_time
-        #         self.count_of_trying = 0
-        #         self.trys_per_interval.clear()
-        for try_ in trying:
-            if try_ < current_lock_time:  # игнор попыток во время бана
-                continue
 
-            if self.current_time - try_ >= 2 * self.max_lock_time:  # 2Bmax condition
+        if len(trying) == 0:
+            return -1
+
+        for try_ in trying:
+            # if try_ < current_lock_time:  # игнор попыток во время бана
+            #     continue
+
+            if self.current_time - try_ > 2 * self.max_lock_time:  # 2Bmax condition
                 continue
 
             if self.count_of_trying == 0:
                 self.trys_per_interval.append(try_)
                 self.count_of_trying += 1
                 if self.max_trying == 1:
+                    """Вырожденный случай так как
+                     для расчета интервала нужно обращение к массиву , а в этом случае - list out of range"""
                     current_lock_time = self.trys_per_interval[0] + self.lock_time
                     self.lock_time *= 2
                     if self.lock_time > self.max_lock_time:
                         self.lock_time = self.max_lock_time
-                    self.trys_per_interval.clear()
+                    self.__clear()
                 continue
 
             if try_ - self.trys_per_interval[0] > self.interval:
-
                 self.trys_per_interval.pop(0)
                 self.trys_per_interval.append(try_)
-
                 continue
+
             else:
                 self.trys_per_interval.append(try_)
                 self.count_of_trying += 1
@@ -81,8 +57,7 @@ class Error_login:
                 self.lock_time *= 2
                 if self.lock_time > self.max_lock_time:
                     self.lock_time = self.max_lock_time
-                self.trys_per_interval.clear()
-                self.count_of_trying = 0
+                self.__clear()
 
         return current_lock_time if current_lock_time > self.current_time else -1
 
@@ -93,8 +68,6 @@ def main():
     trying: list[int] = []
     for line in fileinput.input():
         line = line.replace('\n', '')
-        if line == 'exit':
-            break
         trying.append(int(line))
     result = error.check_of_trying(trying)
     print(result if result != -1 else 'ok')
