@@ -1,69 +1,88 @@
+import math
 import fileinput
 import re
-import math
 
 
 class Fillness:
-    def __init__(self, binary_vector: int, cost: int):
+    def __init__(self, weight: int, binary_vector: int):
         self.binary_vector: int = binary_vector
-        self.cost: int = cost
+        self.weight: int = weight
 
 
 class Knapsack:
+    def __check_types(self, capacity: int, accuracy: float, weights: list[int], values: list[int]) -> int:
+        if accuracy < 0 or accuracy > 1 or type(accuracy) is not float:
+            return 0
+        if capacity < 0 or type(capacity) is not int:
+            return 0
+        for value in values:
+            if value < 0 or type(value) is not int:
+                return 0
+        for weight in weights:
+            if weight < 0 or type(weight) is not int:
+                return 0
+        if len(weights) < 0 or len(values) < 0:
+            return 0
+        return 1
+
+    def __check_weights(self) -> None:
+        for i in range(len(self.values)):
+            if self.weights[i] > self.capacity:
+                self.values.remove(self.values[i])
+                self.weights.remove(self.weights[i])
+
     def __init__(self, capacity: int, accuracy: float, weights: list[int], values: list[int]):
-        self.capacity = capacity
-        self.accuracy = accuracy  # e
-        self.values: list[int] = values
-        self.weights: list[int] = weights
-        self.size: float = 0
-        self.__fullness: int = 0  # строка в бинарном представлении
-        # k = (max(self.values) * (1 - self.accuracy)) / len(self.values)
-        k = 1 - self.accuracy
-        self.capacity = int(self.capacity * k)
-        for i in range(len(self.weights)):
-            self.weights[i] = round(float(self.weights[i]) * k) + 1
+        result: int = self.__check_types(capacity, accuracy, weights, values)
+        if result:
+            self.accuracy: float = accuracy
+            self.capacity: int = int(capacity)
+            self.weights: list[int] = weights
+            self.original_values: list[int] = values
+            self.size: int = 0
+            self.approximation_ratio_ = len(self.original_values) / (self.accuracy * max(self.original_values))
+            self.values: list[int] = [int(x * self.approximation_ratio_) for x in self.original_values]
+        else:
+            raise Exception('error')
+
+        self.__check_weights()
+        self.fillness = Fillness(0, 0)
 
     def download(self):
-        n = len(self.values)
-        memory = [[Fillness(0, 0) for _ in range(self.capacity + 1)] for __ in range(n + 1)]
-        for i in range(n + 1):
-            for w in range(self.capacity + 1):
-                if i == 0 or w == 0:
-                    memory[i][w].cost = 0
-                elif self.weights[i - 1] <= w:
-                    if self.values[i - 1] + memory[i - 1][w - self.weights[i - 1]].cost > memory[i - 1][w].cost:
-                        memory[i][w].cost = self.values[i - 1] + memory[i - 1][w - self.weights[i - 1]].cost
-                        # K[i][w].binary_vector |= 1 << i - 1
-                        memory[i][w].binary_vector = memory[i - 1][w - self.weights[i - 1]].binary_vector | (1 << i - 1)
-                    else:
-                        memory[i][w].cost = memory[i - 1][w].cost
-                        memory[i][w].binary_vector = memory[i - 1][w].binary_vector
+        all_costs: int = sum(self.values)
+        table = [Fillness(self.capacity + 1, 0) for _ in range(all_costs + 1)]
+        table[0] = Fillness(0, 0)
+        i: int = 0
+        while i < len(self.values):
+            j: int = all_costs
+            while j >= self.values[i]:
 
-                else:
-                    memory[i][w] = memory[i - 1][w]
-                    memory[i][w].binary_vector = memory[i - 1][w].binary_vector
+                if self.weights[i] + table[j - self.values[i]].weight < table[j].weight:
+                    table[j].weight = table[j - self.values[i]].weight
+                    table[j].binary_vector = table[j - self.values[i]].binary_vector
+                    table[j].weight += self.weights[i]
+                    table[j].binary_vector |= 1 << i
+                j -= 1
+            i += 1
 
-        # надо откатиться до последней ячейки с такой же стоимостью
-        for i in range(self.capacity):
-            if memory[n][self.capacity - i] == memory[n][self.capacity]:
-                continue
-            else:
-                self.__fullness = memory[n][self.capacity - i + 1].binary_vector
-                self.cost = memory[n][self.capacity - i + 1].cost
-                self.size = self.capacity - i + 1
-                break
-
-        return memory[n][self.capacity]
+        # выберем лучшую стоимость
+        for i in range(len(table) - 1, 0, -1):
+            if table[i].weight <= self.capacity:
+                self.fillness = table[i]
+                return i, table[i]
 
     def __str__(self):
-        answer: str = f'{self.size} {self.cost}\n'
+        answer: str = f'{self.fillness.weight} '
+        items: str = ''
+        cost: int = 0
         i: int = 0
         while i < self.capacity:
-            if self.__fullness & 1:
-                answer += f'{i + 1}\n'
+            if self.fillness.binary_vector & 1:
+                items += f'{i + 1}\n'
+                cost += self.original_values[i]
             i += 1
-            self.__fullness >>= 1  # //2
-        return answer
+            self.fillness.binary_vector >>= 1  # //2
+        answer += f'{str(cost)}\n'
+        return answer + items
 
 
 if __name__ == '__main__':
@@ -83,6 +102,10 @@ if __name__ == '__main__':
             values.append(int(cost))
         else:
             print('error')
-    knapsack = Knapsack(capacity, accuracy, weights, values)
-    knapsack.download()
-    print(knapsack)
+
+    try:
+        knapsack = Knapsack(capacity, accuracy, weights, values)
+        knapsack.download()
+        print(knapsack)
+    except Exception as error:
+        print(error)
