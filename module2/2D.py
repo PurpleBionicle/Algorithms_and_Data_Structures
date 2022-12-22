@@ -2,129 +2,159 @@ import fileinput
 
 
 class Node:
-    def __init__(self, chars='', brother=None, child=None, end_of_word=False):
-        self.chars: str = chars
-        self.brother: Node = brother
-        self.child: Node = child
-        self.end_of_word = end_of_word
+    """
+     сложность обращения к следующей вершине O(1) - class Node
+    """
 
-    def check_for_empty(self):
-        return len(self.chars) == 0
+    def __init__(self, word: str, end_of_word: bool):
+        self.word = word
+        self.kids = {}
+        self.end_of_word = end_of_word
 
 
 class Bor:
+
     def __init__(self):
-        self.root = None
+        self.root: Node = Node('', False)
 
-    def __max_prefix(self, node: Node, word: str) -> int:
-        for i in range(len(word)):
-            if i == len(node.chars) or word[i] != node.chars[i]:
+    def __max_prefix(self, word1: str, word2: str) -> int:
+        min_len: int = min(len(word1), len(word2))
+        for i in range(min_len):
+            if word1[i] != word2[i]:
                 return i
-        return len(word)
+        return min_len
 
-    def __split(self, node: Node, index: int) -> None:
-        new_node = Node(chars=node.chars[index:], end_of_word=True)
-        new_node.child = node.child
-        node.child = new_node
-        node.chars = node.chars[:index]
+    def __split(self, current_node: Node, word: str, index: int) -> None:
+        split: int = self.__max_prefix(word[index:], current_node.word)
+        equal_part = current_node.word[:split]
+        new_node = Node(current_node.word[split:], current_node.end_of_word)
+        new_node.kids = current_node.kids
+        current_node.kids = {current_node.word[split]: new_node}
+        word_split = word[index + split:]
+        if word_split:
+            current_node.kids[word_split[0]] = Node(word_split, True)
+            current_node.end_of_word = False
+        current_node.word = equal_part
 
-    def search(self, tree=Node(), word: str = '') -> None | Node:
-        def __check_error(tree:Node=Node(),word:str=''):
-            def compare_word(word1:str,word2:str):
-                count_error:int = 0
-                i,j= 0,0
-                while i<len(word1) or j<len(word2):
-                    if word1[i]==word2[j]:
-                        i+=1
-                        j+=1
-                    else:
-                        count_error+=1
-                        if word1[i+1]==word[j]:
-                            i+=2
-                            j+=1
-                        elif word[i]==word[j+1]:
-                            j+=2
-                            i+=1
-                        else:
-                            return -1
-                        #Не пропущен 
+    def correction(self, word) -> list[str]:
+        compare = None
+        word = word.lower()
+        if not self.find(word):
+            compare = []
+            for k, v in self.root.kids.items():
+                self.__tree_bypass(word, False, '', 0, v, compare)
+        return compare
 
-            # лишний символ
-            same_part = self.__max_prefix(tree,word)
-            if same_part
+    """ сложность добавления O(n): находим место в дереве за одно последовательное считывание слова"""
 
-            # отсутствует символ
-            if i + 1 < len(node.key) and node.key[i + 1] == word[word_index]:
-                err = ErrorType.LOOSE
-                self._recursive_check(accumulate, node, word, err, key_index + i + 1, word_index)
-            elif i + 1 == len(node.key) and word[word_index] in node.kids:
-                err = ErrorType.LOOSE
-                self._recursive_check(accumulate + node.key, node.kids[word[word_index]], word, err, 0, word_index)
-
-            # символы поменяны местами
-            if word_index + 1 < len(word) and i == len(node.key) - 1 and (
-                    word[word_index + 1] == node.key[i] and word[word_index] in node.kids):
-                err = ErrorType.SWAP_BOARD
-                self._recursive_check(accumulate + node.key, node.kids[word[word_index]], word, err, 1, word_index + 2)
-            elif word_index + 1 < len(word) and i + 1 < len(node.key) and node.key[i] == word[word_index + 1] and \
-                    node.key[i + 1] == \
-                    word[word_index]:
-                err = ErrorType.SWAP_BOARD
-                self._recursive_check(accumulate, node, word, err, key_index + i + 2,
-                                      word_index + 2)
-
-            # Если не сработало ни одна из предыдущих условий, значит символ был заменён
-            err = ErrorType.REPLACE
-            self._recursive_check(accumulate, node, word, err, key_index + i + 1, word_index + 1)
+    def add(self, word) -> None:
+        if not word:
+            return
+        word = word.lower()
+        index = 0
+        current_node: Node = self.root
+        compare: bool = False
+        while index < len(word) and word[index] in current_node.kids:
+            compare = False
+            current_node: Node = current_node.kids[word[index]]
+            if current_node.word == word[index: index + len(current_node.word)]:
+                compare = True
+                index += len(current_node.word)
+                continue
+            break
+        if index == len(word):
+            current_node.end_of_word = True
+            return
+        if word[index] not in current_node.kids and (compare or current_node == self.root):
+            current_node.kids[word[index]] = Node(word[index:], True)
             return
 
-        if tree is None:
-            return None
+        self.__split(current_node, word, index)
 
-        if tree.check_for_empty():
-            if self.root is None:
-                return None
-            tree = self.root
+    """ сложность поиска O(n): за одно последовательное считывание слова постепенно двигаемся по дереву 
+    и находим наше слово"""
 
-        same_part: int = self.__max_prefix(tree, word)
-        if same_part == 0:
-            # если нет префикса, то идем к другому брату - в другую ветвь
-            return self.search(tree.brother, word)
-        if same_part == word and same_part == tree.chars and tree.end_of_word:
-            # дошли
-            return tree
-        if same_part == len(tree.chars):
-            # если слово больше ноды, то спускаемся глубже
-            return self.search(tree.child, word[same_part:])
-        return None
+    def find(self, word) -> bool:
+        word = word.lower()
+        if not self.root.kids:
+            return False
+        index: int = 0
+        current_node: Node = self.root
 
-    def add(self, tree=None, word: str = ''):
-        if self.root is None:
-            tree = Node(chars=word, end_of_word=True)
-            self.root = tree
-            return tree
+        while index < len(word) and word[index] in current_node.kids:
+            current_node: Node = current_node.kids[word[index]]
+            len_temp = len(current_node.word)
+            if current_node.word == word[index: index + len_temp]:
+                index += len_temp
+                continue
+            break
 
-        if tree is None:
-            tree = Node(chars=word, end_of_word=True)
-            return tree
-        # if tree.check_for_empty():
-        #     tree = Node(chars=word)
-        #     if self.root is None:
-        #         self.root = tree
-        #     return tree
+        return index == len(word) and current_node.end_of_word
 
-        same_part: int = self.__max_prefix(tree, word)
-        if same_part == 0:
-            tree.brother = self.add(tree.brother, word)
-        elif same_part < len(word):
-            if same_part < len(tree.chars):
-                self.__split(tree, same_part)
-            tree.child = self.add(tree.child, word[same_part:])
-        return tree
+    def __check_error(self, node: Node, word: str, index: int, offset: int, code: str, error: bool, answer: list,
+                      check_word: str) -> None:
+        replace_error: bool = node.word[offset + 1:] == check_word[offset + 1:]  # был изменен 1 символ
+        buf: str = node.word[offset + 1:]  # чтобы срез не брать два раза
+        delete_error: bool = buf == check_word[offset: offset + len(buf)]  # был удален 1 символ
+        buf = node.word[offset:]
+        insert_error: bool = buf == word[
+                                    index + offset + 1: index + offset + 1 + len(
+                                        buf)]  # был вставлен 1 символ
+        transpose_error: bool = False
+        # транспозиция 2-ух символов
+        if len(word) > index + offset + 1 and offset == len(node.word) - 1 and word[index + offset + 1] == node.word[
+            offset]:
+            if check_word[offset] in node.kids:
+                self.__tree_bypass(
+                    word[index + offset + 1] + check_word[offset] + word[index + offset + 2:], error, code + node.word,
+                    1, node.kids[check_word[offset]], answer)
+        elif offset < len(check_word) - 1 and check_word[offset + 1] + check_word[offset] + check_word[
+                                                                                            offset + 2:] == node.word[
+                                                                                                            offset:]:
+            transpose_error = True
 
+        if delete_error:
+            if index + len(node.word) - 1 == len(word) and node.end_of_word:
+                answer.append(code + node.word)
+            for k, vert in node.kids.items():
+                self.__tree_bypass(word, error, code + node.word, index + len(node.word) - 1, vert, answer)
 
-def get_error_type(word: str, answer: str):
-    pass
+        if insert_error:
+            if index + len(node.word) + 1 == len(word) and node.end_of_word:
+                answer.append(code + node.word)
+            for k, vert in node.kids.items():
+                self.__tree_bypass(word, error, code + node.word, index + len(node.word) + 1, vert, answer)
+
+        if transpose_error or replace_error:
+            if index + len(node.word) == len(word) and node.end_of_word:
+                answer.append(code + node.word)
+            for k, vert in node.kids.items():
+                self.__tree_bypass(word, error, code + node.word, index + len(node.word), vert, answer)
+
+    """
+    сложность поиска подходящих исправлений по сжатому префиксному дереву O(n^2 * k), n - длина слова, k - мощность
+    """
+
+    def __tree_bypass(self, word: str, error: bool, code: str, index: int, node: Node, answer: list):
+        check_word: str = word[index: index + len(node.word)]
+        if node.word == check_word:
+            if node.end_of_word and (
+                    len(word) == index + len(node.word) or (len(word) - 1 == index + len(node.word) and not error)):
+                answer.append(code + node.word)
+
+            # переход к детям
+            for symbol, vertex in node.kids.items():
+                self.__tree_bypass(word, error, code + node.word, index + len(node.word), vertex, answer)
+            return
+        if error:
+            return
+
+        error = True
+
+        offset: int = self.__max_prefix(node.word, check_word)
+
+        self.__check_error(node=node, word=word, index=index, offset=offset, code=code, error=error, answer=answer,
+                           check_word=check_word)
 
 
 def main():
@@ -141,113 +171,31 @@ def main():
         else:
             print('error')
 
-    node = None
-    answer_node = None
     for line in fileinput.input():
         line = line.replace('\n', '')
         if line == '':
             continue
 
         if words < count:
-            node = bor.add(node, line)
+            bor.add(line)
             words += 1
         else:
-            # raise error/1 type_error node / 1 node
-            answer_node = bor.search(Node(), line)
-            if answer_node is None:
-                print(f'{line} -?')
-            else:
+
+            answer: list = bor.correction(line)
+            if answer is None:
                 print(f'{line} - ok')
+                continue
+            if not answer:
+                print(f'{line} -?')
+                continue
+            if len(answer) == 1:
+                print(f'{line} -> {answer[0]}')
+                continue
+
+            answer = sorted(answer)
+            print(f'{line} -> ', end='')
+            print(', '.join(answer))
 
 
 if __name__ == '__main__':
     main()
-
-# def __split(self, word: str, same: int) -> Node:
-# different = self.root.chars[same:]
-# self.root.chars = self.root.chars[:same]
-# if self.root.child is not None:
-#     # Если есть ребенок, то создадим нового и перезапишем связи
-#     last_children: Node = self.root.child
-#     self.root.child = Node(chars=word[same:], child=last_children)
-# else:
-#     self.root.child = Node(chars=different)
-#
-# last_brother = self.root.brother
-# self.root.brother = Node(chars=word[same:],brother=last_brother)
-# return self.root.brother
-# new_node = Node()
-
-# def add(self, word: str):
-#     if self.root.chars is None:
-#         self.root.chars = word
-#     else:
-#         len_same_part: int = 0
-#         offset: int = 0
-#         current_node: Node = self.root
-#         while len(word) != 0:
-#             if current_node is not None:
-#                 if word[offset] != current_node.chars[offset] or offset > len(current_node.chars):
-#                     offset = 0
-#                     if len_same_part == 0:
-#                         if current_node.brother is None:
-#                             current_node.brother = word
-#                             break
-#                         else:
-#                             # если есть брат идем к нему и сравниваем дальше
-#                             current_node = current_node.brother
-#                     else:
-#                         # если есть общая часть длины всей ноды, то отрезаем ее и ищем по срезу в детях
-#                         if len_same_part == len(current_node.chars):
-#                             word = word[len_same_part:]
-#                             len_same_part = 0
-#                             current_node = current_node.child
-#                         else:
-#                             # должны по общей части разбить ноду
-#                             current_node = current_node.__split(word, len_same_part)
-#                             word = word[len_same_part:]
-#
-#                 else:
-#                     offset += 1
-#                     len_same_part = offset
-#                     continue
-#             else:
-#                 current_node.chars = word
-#                 word.clear()
-#
-# def search(self, word: str):
-#     if self.root.chars is None:
-#         return 1 if len(word)<=1 else 0
-#     else:
-#         len_same_part: int = 0
-#         offset: int = 0
-#         current_node: Node = self.root
-#         while len(word) != 0:
-#             if current_node is not None:
-#                 if word[offset] != current_node.chars[offset] or offset > len(current_node.chars):
-#                     offset = 0
-#                     if len_same_part == 0:
-#                         if current_node.brother is None:
-#                             current_node.brother = word
-#                             break
-#                         else:
-#                             # если есть брат идем к нему и сравниваем дальше
-#                             current_node = current_node.brother
-#                     else:
-#                         # если есть общая часть длины всей ноды, то отрезаем ее и ищем по срезу в детях
-#                         if len_same_part == len(current_node.chars):
-#                             word = word[len_same_part:]
-#                             len_same_part = 0
-#                             current_node = current_node.child
-#                         else:
-#                             # должны по общей части разбить ноду
-#                             current_node = current_node.__split(word, len_same_part)
-#                             word = word[len_same_part:]
-#
-#                 else:
-#                     offset += 1
-#                     len_same_part = offset
-#                     continue
-#             else:
-#                 current_node.chars = word
-#                 word.clear()
