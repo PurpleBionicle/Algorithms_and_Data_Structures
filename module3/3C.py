@@ -1,111 +1,127 @@
-import math
 import fileinput
-import re
-
-
-class Fillness:
-    def __init__(self, weight: int, binary_vector: int):
-        self.binary_vector: int = binary_vector
-        self.weight: int = weight
 
 
 class Knapsack:
-    def __check_types(self, capacity: int, accuracy: float, weights: list[int], values: list[int]) -> int:
-        if accuracy < 0 or accuracy > 1 or type(accuracy) is not float:
-            return 0
-        if capacity < 0 or type(capacity) is not int:
-            return 0
-        for value in values:
-            if value < 0 or type(value) is not int:
-                return 0
-        for weight in weights:
-            if weight < 0 or type(weight) is not int:
-                return 0
-        if len(weights) < 0 or len(values) < 0:
-            return 0
-        return 1
+    def __check_params(self, accuracy, capacity) -> bool:
+        return not (accuracy < 0 or accuracy > 1 or type(accuracy) is not float) and not (
+                capacity < 0 or type(capacity) is not int)
 
-    def __check_weights(self) -> None:
-        for i in range(len(self.values)):
-            if self.weights[i] > self.capacity:
-                self.values.remove(self.values[i])
-                self.weights.remove(self.weights[i])
+    def __check_items(self, weight: int, value: int) -> bool:
+        return weight >= 0 and value >= 0
 
-    def __init__(self, capacity: int, accuracy: float, weights: list[int], values: list[int]):
-        result: int = self.__check_types(capacity, accuracy, weights, values)
-        if result:
-            self.accuracy: float = accuracy
-            self.capacity: int = int(capacity)
-            self.weights: list[int] = weights
-            self.original_values: list[int] = values
-            self.size: int = 0
-            self.approximation_ratio_ = len(self.original_values) / (self.accuracy * max(self.original_values))
-            self.values: list[int] = [int(x * self.approximation_ratio_) for x in self.original_values]
+    def __init__(self):
+        self.accuracy: float = 0.0
+        self.capacity: int = 0
+        self.items: list[[int, int]] = []
+        self.table: list = []
+
+    def set_params(self, accuracy: float, capacity: int) -> None:
+        if self.__check_params(accuracy, capacity):
+            self.accuracy = accuracy
+            self.capacity = capacity
         else:
             raise Exception('error')
 
-        self.__check_weights()
-        self.fillness = Fillness(0, 0)
+    def add_item(self, weight: int, value: int):
+        if self.__check_items(weight, value):
+            self.items.append((value, weight))
 
-    def download(self):
-        all_costs: int = sum(self.values)
-        table = [Fillness(self.capacity + 1, 0) for _ in range(all_costs + 1)]
-        table[0] = Fillness(0, 0)
-        i: int = 0
-        while i < len(self.values):
-            j: int = all_costs
-            while j >= self.values[i]:
+    def __find_answer_items(self, new_values: list, target_price: int) -> None:
+        self.final_weight = self.table[len(self.items)][target_price]
+        self.answer = []
+        self.original_price = 0
+        for i in range(len(self.items), 0, -1):
+            if self.table[i - 1].get(target_price) is None or \
+                    self.table[i - 1][target_price] > self.table[i][target_price]:
+                self.answer.append(i)
+                self.original_price += self.items[i - 1][0]
+                target_price -= new_values[i - 1][0]
 
-                if self.weights[i] + table[j - self.values[i]].weight < table[j].weight:
-                    table[j].weight = table[j - self.values[i]].weight
-                    table[j].binary_vector = table[j - self.values[i]].binary_vector
-                    table[j].weight += self.weights[i]
-                    table[j].binary_vector |= 1 << i
-                j -= 1
-            i += 1
+    def download(self) -> None:
+        if len(self.items) == 0:
+            raise Exception('error')
+        else:
+            new_values: list[[int, int]] = []
+            if self.accuracy != 0:
+                max_value: int = max(item[0] for item in self.items)
+                self.approximation: float = len(self.items) / (self.accuracy * max_value)
+                for item in self.items:
+                    new_values.append((int(item[0] * self.approximation), item[1]))
+            else:
+                new_values = self.items
 
-        # выберем лучшую стоимость
-        for i in range(len(table) - 1, 0, -1):
-            if table[i].weight <= self.capacity:
-                self.fillness = table[i]
-                return i, table[i]
+            count = 0  # Номер строки в таблице
+            self.table.append({0: 0})  # инициализирующее число
+            target_price = 0
+
+            for item in new_values:
+                count += 1
+                self.table.append(self.table[count - 1].copy())
+                #  пока в новой строке все старое, но пройдя ее будем менять клеточки
+                for previous_item in self.table[count - 1].items():
+                    if self.table[count].get(previous_item[0] + item[0]) is None:
+                        if previous_item[1] + item[1] <= self.capacity:
+                            self.table[count][previous_item[0] + item[0]] = previous_item[1] + item[1]
+                            if target_price < previous_item[0] + item[0]:
+                                target_price = previous_item[0] + item[0]
+                    else:
+                        if self.table[count - 1][previous_item[0] + item[0]] > previous_item[1] + item[1]:
+                            self.table[count][previous_item[0] + item[0]] = previous_item[1] + item[1]
+
+        self.__find_answer_items(new_values, target_price)
 
     def __str__(self):
-        answer: str = f'{self.fillness.weight} '
-        items: str = ''
-        cost: int = 0
-        i: int = 0
-        while i < self.capacity:
-            if self.fillness.binary_vector & 1:
-                items += f'{i + 1}\n'
-                cost += self.original_values[i]
-            i += 1
-            self.fillness.binary_vector >>= 1  # //2
-        answer += f'{str(cost)}\n'
-        return answer + items
+        self.answer = reversed(self.answer)
+        return f'{self.final_weight} {self.original_price}\n' + '\n'.join(str(x) for x in self.answer)
 
 
-if __name__ == '__main__':
-    accuracy = float(input())
-    capacity = int(input())
-    weights: list[int] = []
-    values: list[int] = []
+def input_(knapsack: Knapsack, accuracy, capacity, line: str):
+    line = line.replace('\n', '')
+    if line == '':
+        return
 
-    for line in fileinput.input():
-        line = line.replace('\n', '')
+    split: list[str] = line.split(' ')
 
-        if line == '':
-            continue
-        elif re.search('\d+ \d+', line):
-            weight, cost = line.split(' ')
-            weights.append(int(weight))
-            values.append(int(cost))
+    if accuracy is None:
+        if len(split) == 1:
+            accuracy = float(line)
+            return accuracy, capacity
         else:
             print('error')
 
-    try:
-        knapsack = Knapsack(capacity, accuracy, weights, values)
-        knapsack.download()
-        print(knapsack)
-    except Exception as error:
-        print(error)
+    elif capacity is None:
+        if len(split) == 1:
+            capacity = int(line)
+            return accuracy, capacity
+        else:
+            raise Exception('error')
+
+    else:
+        knapsack.set_params(accuracy, capacity)
+        if len(split) == 2:
+            try:
+                knapsack.add_item(int(split[0]), int(split[1]))
+                return accuracy, capacity
+            except Exception as error:
+                raise Exception(error)
+        else:
+            raise Exception('error')
+
+
+def main():
+    knapsack = Knapsack()
+    accuracy = None
+    capacity = None
+    for line in fileinput.input():
+        if line == 'exit\n':
+            break
+        try:
+            accuracy, capacity = input_(knapsack, accuracy, capacity, line)
+        except Exception as e:
+            print(e)
+    knapsack.download()
+    print(knapsack)
+
+
+if __name__ == '__main__':
+    main()
