@@ -4,6 +4,27 @@ from array import array
 import re
 
 
+class Bitarray():
+    def __init__(self, size: int = 0):
+        self.array = array('B', [0] * ((size + 7) // 8))
+        self.size: int = size
+
+    def add(self, index: int) -> None:
+        # узнаем индекс в байте и переводим в dec и делаем ИЛИ
+        self.array[index // 8] |= int(math.pow(2, 8 - 1 - (index % 8)))
+
+    def check_bit(self, index: int) -> bool:  # TODO check
+        # вернем индекс в булевом представлении
+        return bool(self.array[index // 8] & int(math.pow(2, 8 - 1 - (index % 8))))
+
+    def __str__(self):
+        str_array: str = ''
+        for byte in self.array:
+            str_array += f'{byte:08b}'
+        str_array = str_array[:self.size]
+        return str_array
+
+
 class Bloom_filter():
     def __generate_primes(self, count: int):
         primes: list[int] = [2]
@@ -26,43 +47,33 @@ class Bloom_filter():
 
         self.count: int = n
         self.M_31: int = 2147483647
-
         self.size: int = round((-1 * n * math.log2(P)) / math.log(2))
         self.hashes_count: int = round(-1 * math.log2(P))
         if self.size <= 0 or self.hashes_count <= 0:
             raise Exception('error')
-        else:
-            print(f'{self.size} {self.hashes_count}')
-
-        self.array = array('B', [0] * ((self.size + 7) // 8))
+        # else:
+        # print(f'{self.size} {self.hashes_count}')
+        self.array: Bitarray = Bitarray(self.size)
         self.primes: list[int] = self.__generate_primes(self.hashes_count)
 
     def __str__(self):
-        if self.array is None:
-            raise Exception('error')
+        return str(self.array)
 
-        result: str = ''
-        for bit in self.array:
-            bin: str = f'{bit:08b}'
-            result += bin
+    def hash(self, i: int, key: int) -> int:
+        return (((i + 1) * key + self.primes[i]) % self.M_31) % self.size
 
-        shift: int = len(result) % self.size
-        return result if len(result) % self.size == 0 else result[:len(result) - shift]
+    def add(self, key: int):
+        for index in range(self.hashes_count):
+            current_hash: int = self.hash(index, key)
+            self.array.add(current_hash)
 
-    def add(self, k: int):
+    def search(self, key: int) -> bool:
         for i in range(self.hashes_count):
-            #         по всем хэшам идем
-            hash: int = (((i + 1) * k + self.primes[i]) % self.M_31) % self.size
-            # узнаем индекс в байте и переводим в dec и делаем или
-            self.array[hash // 8] = self.array[hash // 8] | int(math.pow(2, 8 - 1 - (hash % 8)))
-
-    def search(self, k: int) -> int:
-        for i in range(self.hashes_count):
-            hash = ((((i + 1) * k + self.primes[i]) % self.M_31) % self.size)
-            bin_array: str = f'{self.array[hash // 8]:08b}'
-            if bin_array[hash % 8] == '0':
-                return 0
-        return 1
+            index: int = self.hash(i, key)
+            bit: bool = self.array.check_bit(index)
+            if not bit:
+                return False
+        return True
 
 
 def main():
@@ -79,6 +90,7 @@ def main():
                 params: list[str] = line.split(' ')
                 try:
                     bloom = Bloom_filter(int(params[1]), float(params[2]))
+                    print(f'{bloom.size} {bloom.hashes_count}')
                 except Exception as error:
                     print(error)
             else:
@@ -93,7 +105,7 @@ def main():
         elif re.search('search \d+', line):
             if bloom is not None:
                 result: int = bloom.search(int(line.split(' ')[1]))
-                print(result)
+                print('1' if result else '0')
             else:
                 print('error')
 
